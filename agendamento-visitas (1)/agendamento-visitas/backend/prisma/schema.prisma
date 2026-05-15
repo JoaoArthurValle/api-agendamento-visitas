@@ -1,0 +1,52 @@
+// Prisma schema para o sistema de agendamento de visitas
+// MySQL como banco de dados
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           Int           @id @default(autoincrement())
+  name         String        @db.VarChar(120)
+  email        String        @unique @db.VarChar(160)
+  password     String        @db.VarChar(255) // hash bcrypt
+  role         Role          @default(USER)
+  appointments Appointment[]
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+
+  @@map("users")
+}
+
+model Appointment {
+  id        Int               @id @default(autoincrement())
+  // Slot único: garante que não haja dois agendamentos no mesmo horário
+  startTime DateTime          @unique
+  endTime   DateTime
+  reason    String            @db.Text
+  status    AppointmentStatus @default(SCHEDULED)
+  userId    Int
+  user      User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime          @default(now())
+  updatedAt DateTime          @updatedAt
+
+  @@index([startTime])
+  @@index([userId])
+  @@map("appointments")
+}
+
+enum Role {
+  USER
+  ADMIN
+}
+
+enum AppointmentStatus {
+  SCHEDULED
+  CANCELED
+  COMPLETED
+}
